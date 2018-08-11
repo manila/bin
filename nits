@@ -1,0 +1,32 @@
+#!/bin/bash
+
+# Manuel Nila - Aug 2018
+# Increase or Decrease screen brightness
+
+# Dependent on file(s):
+#	/sys/class/backlight/intel_backlight
+#	/sys/class/backlight/max_brightness
+
+usage () {
+	echo "Usage: [-up|-dn] number"
+}
+
+change_brightness () {
+	local step=0
+	local cur_brightness="$( cat /sys/class/backlight/intel_backlight/brightness )"
+	local end_brightness="$(( $cur_brightness+($1*$2) ))"
+
+	while [[ $(( $step + $cur_brightness )) -ne $end_brightness ]]; do
+		echo "$(( $step+$cur_brightness ))" > /sys/class/backlight/intel_backlight/brightness
+		step="$(( $step+($2*1) ))"
+		sleep .001
+	done &
+}
+
+if [[ -f /sys/class/backlight/intel_backlight/brightness && -f /sys/class/backlight/intel_backlight/max_brightness ]]; then
+	case "$1" in
+		-up|-u) change_brightness "$2" "1";;
+		-dn|-d) change_brightness "$2" "-1";;
+		*) usage
+	esac
+fi
