@@ -1,14 +1,31 @@
-#!/bin/sh
+#!/bin/bash
 # ~/barf.sh
 #
-# by Manila
+# Manuel Nila - Aug 2018
+
+source "$(dirname $0)/config_bar.conf"
 
 dateandtime() {
-	echo "$( date '+%a %I:%M' )"
+	echo "$( date '+%a %I:%M' ) "
 }
 
 batteryinfo() {
-	echo "$( acpi | cut -d ',' -f 2 | tr -d ' \t\n\r\f' )"
+	# Get battery percent from acpi, trim away whitespace and extra chars
+	batt="$( acpi | awk '{ print $4 }' | tr ' ,%\t\n' ' ' )"
+
+	# Four levels of battery, limited by font awesome free :(
+	if [ $batt -gt 90 ]; then
+		batt="\uf240"
+	elif [ $batt -gt 60 ]; then
+		batt="\uf241"
+	elif [ $batt -gt 40 ]; then
+		batt="\uf242"
+	elif [ $batt -gt 20 ]; then
+		batt="\uf243"
+	else
+		batt="\uf244"
+	fi
+	echo "%{T2}$batt%{T1}"
 }
 
 cpuinfo() {
@@ -16,8 +33,13 @@ cpuinfo() {
 }
 
 meminfo() {
-	echo "$( cat /proc/meminfo | awk '
-	NR < 3 {if (NR == 1) { free=$2; next }} {if (NR == 2) { free-=$2; next }} END {{if ((free/1000/1000) < 1) { printf "%3dMB", (free/1000) }} {if ((free/1000/1000) > 1) { printf "%1.2fGB", (free/1000/1000) }}}'
+	echo "$( cat /proc/meminfo | awk '\
+	NR < 3 \
+	{if (NR == 1) { free=$2; next }} \
+	{if (NR == 2) { free-=$2; next }} \
+	END \
+	{{if ((free/1000/1000) < 1) { printf "%3dMB", (free/1000) }} \
+	{if ((free/1000/1000) > 1) { printf "%1.2fGB", (free/1000/1000) }}}'
 )"
 
 }
@@ -38,8 +60,15 @@ uptime() {
 	echo "\0"
 }
 
+window_focus() {
+	id=$( xprop -root _NET_ACTIVE_WINDOW | awk '{ print $5 }')
+	window_name="$( xprop -id $id WM_NAME | cut -d '=' -f2 | tr '\"' ' ' )"
+
+	echo "$window_name"
+}
+
 #Status Bar
 while :; do
-	echo " %{r} $(cpuinfo) $(meminfo) $(volume)  $(batteryinfo) $(dateandtime)  "
+	echo -e "$(window_focus) %{r} \uf0e4 $(cpuinfo) \uf2db $(meminfo) \uf028 $(volume) $(batteryinfo) $(dateandtime)"
 	sleep 2
 done
