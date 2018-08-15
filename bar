@@ -62,13 +62,25 @@ uptime() {
 
 window_focus() {
 	id=$( xprop -root _NET_ACTIVE_WINDOW | awk '{ print $5 }')
-	window_name="$( xprop -id $id WM_NAME | cut -d '=' -f2 | tr '\"' ' ' )"
+	window_name="$( xprop -id $id WM_CLASS | awk '{ print $4 }' | xargs )"
 
 	echo "$window_name"
 }
 
+parse_net_wm_name () {		
+	echo "$( xprop -id $1 2> /dev/null | awk '/_NET_WM_NAME/' | cut -d '"' -f2 )"
+}
+
 #Status Bar
 while :; do
-	echo -e "$(window_focus) %{r} \uf0e4 $(cpuinfo) \uf2db $(meminfo) \uf028 $(volume) $(batteryinfo) $(dateandtime)"
+	# Find Spotify Window ID
+	if [[ "$(window_focus)" == "Spotify" && $spot_id == '' ]]; then
+		 spot_id="$( xprop -root _NET_ACTIVE_WINDOW | awk '{ print $5 }')"	
+	fi
+
+	# Update now playing
+	now_playing="$( parse_net_wm_name $spot_id )"
+
+	echo -e " $(window_focus) %{cT2F#6AE368}\uf1bc%{T1} $now_playing  %{F#FFFFFFr}\uf0e4 $(cpuinfo) \uf2db $(meminfo) \uf028 $(volume) $(batteryinfo) $(dateandtime)"
 	sleep 2
 done
