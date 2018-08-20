@@ -1,35 +1,32 @@
 #!/bin/bash
-# ~/barf.sh
+# ~/bar.sh
 #
 # Manuel Nila - Aug 2018
 
 source "$(dirname $0)/config_bar.conf"
 
 dateandtime() {
-	echo "$( date '+%a %I:%M' ) "
+	echo "$( date '+%A %I:%M %p' ) "
 }
 
 batteryinfo() {
-	# Get battery percent from acpi, trim away whitespace and extra chars
-	batt="$( acpi | awk '{ print $4 }' | tr ' ,%\t\n' ' ' )"
+	# Using acpi, trim away whitespace and extra chars
+	batt="$( acpi | awk '{ print $4 }' | tr '%,' ' ' | xargs )"
+	batt_icon="\uf240"
 
 	# Four levels of battery, limited by font awesome free :(
 	if [ $batt -gt 90 ]; then
-		batt="\uf240"
+		batt_icon="\uf240"
 	elif [ $batt -gt 60 ]; then
-		batt="\uf241"
+		batt_icon="\uf241"
 	elif [ $batt -gt 40 ]; then
-		batt="\uf242"
+		batt_icon="\uf242"
 	elif [ $batt -gt 20 ]; then
-		batt="\uf243"
+		batt_icon="\uf243"
 	else
-		batt="\uf244"
+		batt_icon="\uf244"
 	fi
-	echo "%{T2}$batt%{T1}"
-}
-
-cpuinfo() {
-	echo "$( ps aux | awk '{ load+=$3 } END { print load }' )"
+	echo "%{T1}$batt% %{T2}$batt_icon%{T1}"
 }
 
 meminfo() {
@@ -45,19 +42,26 @@ meminfo() {
 }
 
 brightness() {
-	echo "$( awk '{ if (FNR==NR) { value=$0; next } { printf "%2.0d", (value / $0 * 100) }}' /sys/class/backlight/intel_backlight/brightness /sys/class/backlight/intel_backlight/max_brightness )"
-}
-
-networking() {
-	echo "hi"
+	echo "$( \
+		awk '{ if (FNR==NR) 
+		{ value=$0; next } { printf "%2.0d", (value / $0 * 100) }}'\
+	       	/sys/class/backlight/intel_backlight/brightness \
+		/sys/class/backlight/intel_backlight/max_brightness )"
 }
 
 volume() {
-	echo "$( amixer get Master | awk 'END { print $4 }' )"
-}
+	vol="$( amixer get Master | awk 'END { print $4 }' | tr '[]%' ' ' | xargs)"
+	vol_icon="\uf028"
 
-uptime() {
-	echo "\0"
+	if [[ vol -gt 50 ]]; then
+		vol_icon="\uf028"
+	elif [[ vol -gt 10 ]]; then
+		vol_icon="\uf027"	
+	else
+		vol_icon="\uf026"
+	fi
+
+	echo "%{T1}$vol% %{T2}$vol_icon%{T1}"
 }
 
 window_focus() {
@@ -71,6 +75,12 @@ parse_net_wm_name () {
 	echo "$( xprop -id $1 2> /dev/null | awk '/_NET_WM_NAME/' | cut -d '"' -f2 )"
 }
 
+spotify_now_playing() {
+	if [[ "$1" -ne '' ]]; then
+		echo "%{cT2F#6AE368}\uf1bc%{T1} $( parse_net_wm_name $1 ) %{F#FFFFFFr}"
+	fi
+}
+
 #Status Bar
 while :; do
 	# Find Spotify Window ID
@@ -78,9 +88,6 @@ while :; do
 		 spot_id="$( xprop -root _NET_ACTIVE_WINDOW | awk '{ print $5 }')"	
 	fi
 
-	# Update now playing
-	now_playing="$( parse_net_wm_name $spot_id )"
-
-	echo -e " $(window_focus) %{cT2F#6AE368}\uf1bc%{T1} $now_playing  %{F#FFFFFFr}\uf0e4 $(cpuinfo) \uf2db $(meminfo) \uf028 $(volume) $(batteryinfo) $(dateandtime)"
+	echo -e "%{T3} $(window_focus) $(spotify_now_playing $spot_id) %{r}$(volume)  $(batteryinfo)  $(dateandtime) "
 	sleep 2
 done
