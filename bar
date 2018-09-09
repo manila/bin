@@ -65,7 +65,7 @@ volume() {
 		vol_icon="\uf026"
 	fi
 
-	echo "%{T1}$vol %{T2}$vol_icon%{T1}"
+	echo "%{T1}$vol% %{T2}$vol_icon%{T1}"
 }
 
 window_focus() {
