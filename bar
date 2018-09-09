@@ -50,15 +50,15 @@ brightness() {
 }
 
 volume() {
-	state="$( amixer get Master | awk 'END { print $6}' | tr '[]' ' ' | xargs )"
-	vol="$( amixer get Master | awk 'END { print $5 }' | tr '[]%' ' ' | xargs)%"
+	state="$(amixer get Master | awk 'END { print $6}' | tr '[]' ' ' | xargs)"
+	vol="$(amixer get Master | awk 'END { print $5 }' | tr '[]%' ' ' | xargs)"
 	vol_icon="\uf028"
 
-	if [[ vol -gt 50 && "$state" == "on" ]]; then
+	if [[ "$vol" -gt 50 && "$state" == "on" ]]; then
 		vol_icon="\uf028"
-	elif [[ vol -gt 10 && "$state" == "on" ]]; then
+	elif [[ "$vol" -ge 10 && "$state" == "on" ]]; then
 		vol_icon="\uf027"	
-	elif [[ "$state" == "on" ]]; then
+	elif [[ "$vol" -lt 10 && "$state" == "on" ]]; then
 		vol_icon="\uf026"
 	else
 		vol="mute"
