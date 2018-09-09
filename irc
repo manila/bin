@@ -1,0 +1,4 @@
+#!/bin/bash
+# Manuel Nila - September 2018
+
+exec st irssi
